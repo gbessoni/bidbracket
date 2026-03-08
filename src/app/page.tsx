@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { usePlayerIdentity } from "@/context/PlayerContext";
 import CreateLeagueForm from "@/components/onboarding/CreateLeagueForm";
 import JoinLeagueForm from "@/components/onboarding/JoinLeagueForm";
+import RejoinLeagueForm from "@/components/onboarding/RejoinLeagueForm";
 import Button from "@/components/ui/Button";
 
 export default function Home() {
-  const [mode, setMode] = useState<"landing" | "create" | "join">("landing");
+  const [mode, setMode] = useState<"landing" | "create" | "join" | "rejoin">("landing");
   const { identity } = usePlayerIdentity();
   const router = useRouter();
   const [redirecting, setRedirecting] = useState(false);
@@ -64,6 +65,12 @@ export default function Home() {
             >
               Join a League
             </Button>
+            <button
+              onClick={() => setMode("rejoin")}
+              className="w-full text-center text-text-muted text-sm hover:text-accent transition-colors pt-2"
+            >
+              Rejoin existing league
+            </button>
           </div>
         )}
 
@@ -82,6 +89,18 @@ export default function Home() {
         {mode === "join" && (
           <div className="space-y-4">
             <JoinLeagueForm />
+            <button
+              onClick={() => setMode("landing")}
+              className="w-full text-center text-text-muted text-sm hover:text-text-secondary transition-colors"
+            >
+              Back
+            </button>
+          </div>
+        )}
+
+        {mode === "rejoin" && (
+          <div className="space-y-4">
+            <RejoinLeagueForm />
             <button
               onClick={() => setMode("landing")}
               className="w-full text-center text-text-muted text-sm hover:text-text-secondary transition-colors"

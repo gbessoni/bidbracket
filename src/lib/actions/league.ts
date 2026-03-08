@@ -85,3 +85,46 @@ export async function joinLeague(
     isAdmin: false,
   };
 }
+
+export async function rejoinLeague(
+  playerName: string,
+  inviteCode: string
+): Promise<PlayerIdentity> {
+  const db = getDb();
+  const code = inviteCode.toUpperCase();
+
+  const codeSnap = await get(ref(db, `codes/${code}`));
+  if (!codeSnap.exists()) {
+    throw new Error("Invalid invite code");
+  }
+
+  const leagueId = codeSnap.val() as string;
+
+  // Find the player by name
+  const playersSnap = await get(ref(db, `players/${leagueId}`));
+  if (!playersSnap.exists()) {
+    throw new Error("No players found in this league");
+  }
+
+  const players = playersSnap.val() as Record<string, { name: string; isAdmin: boolean }>;
+  const match = Object.entries(players).find(
+    ([, p]) => p.name.toLowerCase() === playerName.trim().toLowerCase()
+  );
+
+  if (!match) {
+    throw new Error("No player with that name found in this league");
+  }
+
+  const [playerId, player] = match;
+
+  // Check if this player is the league admin
+  const leagueSnap = await get(ref(db, `leagues/${leagueId}/adminId`));
+  const isAdmin = leagueSnap.exists() && leagueSnap.val() === playerId;
+
+  return {
+    playerId,
+    playerName: player.name,
+    leagueId,
+    isAdmin,
+  };
+}

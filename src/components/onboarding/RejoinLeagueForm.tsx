@@ -42,9 +42,9 @@ export default function RejoinLeagueForm() {
   return (
     <Card>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <h3 className="text-lg font-bold text-text-primary">Rejoin Your League</h3>
+        <h3 className="text-lg font-bold text-text-primary">Return to Your League</h3>
         <p className="text-text-muted text-xs">
-          Enter the same name you used before and your league code.
+          Cleared your browser or on a new device? Enter your name and league code to get back in.
         </p>
 
         <Input

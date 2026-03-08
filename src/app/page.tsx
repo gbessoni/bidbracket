@@ -80,7 +80,7 @@ export default function Home() {
               onClick={() => setMode("rejoin")}
               className="w-full text-center text-text-muted text-sm hover:text-accent transition-colors pt-2"
             >
-              Rejoin existing league
+              Lost your session? Return to league
             </button>
           </div>
         )}

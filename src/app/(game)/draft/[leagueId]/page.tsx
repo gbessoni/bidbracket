@@ -7,15 +7,13 @@ import { useLeague } from "@/hooks/useLeague";
 import { useAuction } from "@/hooks/useAuction";
 import { useTeams } from "@/hooks/useTeams";
 import { usePlayers } from "@/hooks/usePlayers";
-import { useDraftHistory } from "@/hooks/useDraftHistory";
 import NominationPanel from "@/components/draft/NominationPanel";
 import BiddingPanel from "@/components/draft/BiddingPanel";
-import DraftBoard from "@/components/draft/DraftBoard";
 import DraftStandings from "@/components/draft/DraftStandings";
 import AllPlayersRosters from "@/components/draft/AllPlayersRosters";
 import Spinner from "@/components/ui/Spinner";
 
-type MobileTab = "auction" | "rosters" | "board" | "standings";
+type MobileTab = "auction" | "rosters" | "standings";
 
 export default function DraftPage() {
   const params = useParams();
@@ -23,13 +21,11 @@ export default function DraftPage() {
   const router = useRouter();
   const { identity } = usePlayerIdentity();
   const [mobileTab, setMobileTab] = useState<MobileTab>("auction");
-  const [desktopSideTab, setDesktopSideTab] = useState<"rosters" | "board">("rosters");
 
   const { league } = useLeague(leagueId);
   const { auction, loading: auctionLoading } = useAuction(leagueId);
   const { teams } = useTeams(leagueId);
   const { players } = usePlayers(leagueId);
-  const { history } = useDraftHistory(leagueId);
 
   const isNominator = auction?.nominatorId === identity?.playerId;
   const isBidding = auction?.phase === "BIDDING";
@@ -143,13 +139,6 @@ export default function DraftPage() {
               currentPlayerId={identity!.playerId}
             />
           )}
-          {mobileTab === "board" && (
-            <DraftBoard
-              history={history}
-              players={players}
-              totalTeamsDrafted={auction.totalTeamsDrafted}
-            />
-          )}
           {mobileTab === "standings" && (
             <DraftStandings
               players={players}
@@ -163,16 +152,15 @@ export default function DraftPage() {
         <nav className="fixed bottom-0 left-0 right-0 bg-surface-card border-t border-surface-border px-2 py-1 safe-bottom z-50">
           <div className="flex justify-around">
             {[
-              { id: "auction" as MobileTab, label: "Auction", icon: "M" , alert: isBidding || isNominator },
-              { id: "rosters" as MobileTab, label: "Rosters", icon: "R", alert: false },
-              { id: "board" as MobileTab, label: "Board", icon: "B", alert: false },
-              { id: "standings" as MobileTab, label: "Standings", icon: "S", alert: false },
+              { id: "auction" as MobileTab, label: "Auction", alert: isBidding || isNominator },
+              { id: "rosters" as MobileTab, label: "Rosters", alert: false },
+              { id: "standings" as MobileTab, label: "Standings", alert: false },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setMobileTab(tab.id)}
                 className={`
-                  flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-lg transition-colors relative
+                  flex flex-col items-center gap-0.5 py-1.5 px-4 rounded-lg transition-colors relative
                   ${mobileTab === tab.id
                     ? "text-accent"
                     : "text-text-muted"
@@ -185,7 +173,6 @@ export default function DraftPage() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                   {tab.id === "auction" && <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />}
                   {tab.id === "rosters" && <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />}
-                  {tab.id === "board" && <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />}
                   {tab.id === "standings" && <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />}
                 </svg>
                 <span className="text-[10px] font-semibold">{tab.label}</span>
@@ -213,51 +200,13 @@ export default function DraftPage() {
             currentPlayerId={identity!.playerId}
           />
 
-          {/* Tabbed: Rosters / Draft Board */}
-          <div className="flex-1 min-h-0 flex flex-col">
-            <div className="flex gap-1 mb-2">
-              <button
-                onClick={() => setDesktopSideTab("rosters")}
-                className={`
-                  flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors
-                  ${desktopSideTab === "rosters"
-                    ? "bg-accent text-white"
-                    : "bg-surface-hover text-text-secondary hover:bg-surface-border"
-                  }
-                `}
-              >
-                All Rosters
-              </button>
-              <button
-                onClick={() => setDesktopSideTab("board")}
-                className={`
-                  flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors
-                  ${desktopSideTab === "board"
-                    ? "bg-accent text-white"
-                    : "bg-surface-hover text-text-secondary hover:bg-surface-border"
-                  }
-                `}
-              >
-                Draft Board
-              </button>
-            </div>
-
-            <div className="flex-1 min-h-0">
-              {desktopSideTab === "rosters" && (
-                <AllPlayersRosters
-                  players={players}
-                  teams={teams}
-                  currentPlayerId={identity!.playerId}
-                />
-              )}
-              {desktopSideTab === "board" && (
-                <DraftBoard
-                  history={history}
-                  players={players}
-                  totalTeamsDrafted={auction.totalTeamsDrafted}
-                />
-              )}
-            </div>
+          {/* Rosters */}
+          <div className="flex-1 min-h-0">
+            <AllPlayersRosters
+              players={players}
+              teams={teams}
+              currentPlayerId={identity!.playerId}
+            />
           </div>
         </div>
       </div>

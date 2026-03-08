@@ -119,7 +119,7 @@ export default function NominationPanel({
             </p>
 
             <div className="flex gap-2">
-              {[1, 5, 10, 25].map((amount) => (
+              {[1, 2, 3, 5].map((amount) => (
                 <button
                   key={amount}
                   onClick={() => setStartingBid(String(amount))}

@@ -27,7 +27,7 @@ export async function createLeague(
   updates[`players/${leagueId}/${playerId}`] = {
     name: playerName,
     age,
-    budget: 1000,
+    budget: 100,
     teams: {},
     totalWins: 0,
     isAdmin: true,
@@ -71,7 +71,7 @@ export async function joinLeague(
   await set(ref(db, `players/${leagueId}/${playerId}`), {
     name: playerName,
     age,
-    budget: 1000,
+    budget: 100,
     teams: {},
     totalWins: 0,
     isAdmin: false,

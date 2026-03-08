@@ -69,7 +69,7 @@ export default function BiddingPanel({
   const isHighBidder = auction.highBidderId === playerId;
   const canBid = !isHighBidder && bidAmount <= playerBudget && !timer.isExpired;
 
-  const quickBids = [1, 5, 10, 25, 50].map((inc) => auction.currentBid + inc);
+  const quickBids = [1, 2, 3, 5].map((inc) => auction.currentBid + inc);
 
   return (
     <div className="space-y-4">
@@ -108,7 +108,7 @@ export default function BiddingPanel({
       {!isHighBidder && !timer.isExpired && (
         <div className="space-y-3">
           {/* Quick bid buttons */}
-          <div className="grid grid-cols-5 gap-1.5">
+          <div className="grid grid-cols-4 gap-1.5">
             {quickBids.map((amount) => (
               <button
                 key={amount}

@@ -16,6 +16,7 @@ export default function Home() {
   useEffect(() => {
     if (identity && !redirecting) {
       setRedirecting(true);
+      // Go straight to lobby — it will auto-redirect to draft/tournament based on league status
       router.push(`/lobby/${identity.leagueId}`);
     }
   }, [identity, router, redirecting]);
@@ -93,7 +94,7 @@ export default function Home() {
         {/* Footer */}
         <div className="text-center text-text-muted text-xs pt-8">
           <div className="flex items-center justify-center gap-1">
-            <span className="font-financial text-accent">$1,000</span>
+            <span className="font-financial text-accent">$100</span>
             <span>budget per player</span>
             <span className="mx-1">&middot;</span>
             <span className="font-financial text-accent">68</span>

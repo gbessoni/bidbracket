@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePlayerIdentity } from "@/context/PlayerContext";
 import { useLeague } from "@/hooks/useLeague";
 import { useAuction } from "@/hooks/useAuction";
@@ -10,15 +10,19 @@ import { usePlayers } from "@/hooks/usePlayers";
 import { useDraftHistory } from "@/hooks/useDraftHistory";
 import NominationPanel from "@/components/draft/NominationPanel";
 import BiddingPanel from "@/components/draft/BiddingPanel";
-import PlayerRoster from "@/components/draft/PlayerRoster";
 import DraftBoard from "@/components/draft/DraftBoard";
+import DraftStandings from "@/components/draft/DraftStandings";
+import AllPlayersRosters from "@/components/draft/AllPlayersRosters";
 import Spinner from "@/components/ui/Spinner";
+
+type SidebarTab = "rosters" | "board";
 
 export default function DraftPage() {
   const params = useParams();
   const leagueId = params.leagueId as string;
   const router = useRouter();
   const { identity } = usePlayerIdentity();
+  const [sidebarTab, setSidebarTab] = useState<SidebarTab>("rosters");
 
   const { league } = useLeague(leagueId);
   const { auction, loading: auctionLoading } = useAuction(leagueId);
@@ -60,7 +64,7 @@ export default function DraftPage() {
     <div className="min-h-screen flex flex-col">
       {/* Header Bar */}
       <header className="bg-surface-card border-b border-surface-border px-4 py-3">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-[1600px] mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-black">
               <span className="text-accent">Bid</span>
@@ -71,25 +75,33 @@ export default function DraftPage() {
             </span>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-text-secondary text-sm">
-              Round {auction.roundNumber}
-            </span>
-            <span className="font-financial text-sm text-accent">
-              {auction.totalTeamsDrafted}/68
-            </span>
+            <div className="hidden sm:flex items-center gap-2 text-sm">
+              <span className="text-text-secondary">
+                Round {auction.roundNumber}
+              </span>
+              <span className="text-text-muted">|</span>
+              <span className="font-financial text-accent">
+                {auction.totalTeamsDrafted}/68
+              </span>
+              <span className="text-text-muted">|</span>
+              <span className="text-text-secondary">{currentPlayer.name}</span>
+              <span className="font-financial text-accent font-bold">
+                ${currentPlayer.budget}
+              </span>
+            </div>
+            {/* Mobile budget */}
+            <div className="sm:hidden font-financial text-accent font-bold">
+              ${currentPlayer.budget}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 max-w-7xl mx-auto w-full px-4 py-4">
-        <div className="flex gap-4 h-[calc(100vh-80px)]">
-          {/* Left Sidebar - Player Roster */}
-          <div className="w-64 flex-shrink-0 hidden lg:block">
-            <PlayerRoster player={currentPlayer} teams={teams} />
-          </div>
+      <div className="flex-1 max-w-[1600px] mx-auto w-full px-4 py-4">
+        <div className="flex gap-4 h-[calc(100vh-76px)]">
 
-          {/* Center - Auction Area */}
+          {/* Left Side - Auction Area */}
           <div className="flex-1 min-w-0">
             <div className="bg-surface-card border border-surface-border rounded-xl p-6 h-full overflow-y-auto">
               {auction.phase === "NOMINATION" && (
@@ -117,28 +129,63 @@ export default function DraftPage() {
             </div>
           </div>
 
-          {/* Right Sidebar - Draft Board */}
-          <div className="w-72 flex-shrink-0 hidden md:block">
-            <DraftBoard
-              history={history}
+          {/* Right Side - Standings + Tabbed Panel */}
+          <div className="w-80 flex-shrink-0 hidden md:flex flex-col gap-4">
+            {/* Standings */}
+            <DraftStandings
               players={players}
-              totalTeamsDrafted={auction.totalTeamsDrafted}
+              teams={teams}
+              currentPlayerId={identity!.playerId}
             />
-          </div>
-        </div>
-      </div>
 
-      {/* Mobile Bottom Bar - Budget */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-surface-card border-t border-surface-border px-4 py-2">
-        <div className="flex items-center justify-between">
-          <span className="text-text-secondary text-sm">{currentPlayer.name}</span>
-          <div className="flex items-center gap-3">
-            <span className="text-text-muted text-xs">
-              {Object.keys(currentPlayer.teams || {}).length} teams
-            </span>
-            <span className="font-financial text-lg font-bold text-accent">
-              ${currentPlayer.budget}
-            </span>
+            {/* Tabbed: Rosters / Draft Board */}
+            <div className="flex-1 min-h-0 flex flex-col">
+              {/* Tab Buttons */}
+              <div className="flex gap-1 mb-2">
+                <button
+                  onClick={() => setSidebarTab("rosters")}
+                  className={`
+                    flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors
+                    ${sidebarTab === "rosters"
+                      ? "bg-accent text-white"
+                      : "bg-surface-hover text-text-secondary hover:bg-surface-border"
+                    }
+                  `}
+                >
+                  All Rosters
+                </button>
+                <button
+                  onClick={() => setSidebarTab("board")}
+                  className={`
+                    flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors
+                    ${sidebarTab === "board"
+                      ? "bg-accent text-white"
+                      : "bg-surface-hover text-text-secondary hover:bg-surface-border"
+                    }
+                  `}
+                >
+                  Draft Board
+                </button>
+              </div>
+
+              {/* Tab Content */}
+              <div className="flex-1 min-h-0">
+                {sidebarTab === "rosters" && (
+                  <AllPlayersRosters
+                    players={players}
+                    teams={teams}
+                    currentPlayerId={identity!.playerId}
+                  />
+                )}
+                {sidebarTab === "board" && (
+                  <DraftBoard
+                    history={history}
+                    players={players}
+                    totalTeamsDrafted={auction.totalTeamsDrafted}
+                  />
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Team, Region } from "@/types";
-import { REGIONS } from "@/lib/constants/regions";
+import { REGIONS, REGION_BG_CLASSES } from "@/lib/constants/regions";
 import TeamCard from "./TeamCard";
 
 interface TeamPickerProps {
@@ -12,60 +12,62 @@ interface TeamPickerProps {
 }
 
 export default function TeamPicker({ teams, onSelect, selectedTeamId }: TeamPickerProps) {
-  const [search, setSearch] = useState("");
   const [regionFilter, setRegionFilter] = useState<Region | "All">("All");
-  const [seedFilter, setSeedFilter] = useState<string>("All");
 
   const availableTeams = useMemo(() => {
-    return teams.filter((t) => {
-      if (t.status !== "AVAILABLE") return false;
-      if (search && !t.name.toLowerCase().includes(search.toLowerCase()) &&
-          !t.shortName.toLowerCase().includes(search.toLowerCase())) return false;
-      if (regionFilter !== "All" && t.region !== regionFilter) return false;
-      if (seedFilter !== "All" && t.seed !== parseInt(seedFilter)) return false;
-      return true;
+    return teams
+      .filter((t) => {
+        if (t.status !== "AVAILABLE") return false;
+        if (regionFilter !== "All" && t.region !== regionFilter) return false;
+        return true;
+      })
+      .sort((a, b) => a.seed - b.seed);
+  }, [teams, regionFilter]);
+
+  const regionCounts = useMemo(() => {
+    const counts: Record<string, number> = { All: 0 };
+    REGIONS.forEach((r) => (counts[r] = 0));
+    teams.forEach((t) => {
+      if (t.status === "AVAILABLE") {
+        counts.All++;
+        counts[t.region]++;
+      }
     });
-  }, [teams, search, regionFilter, seedFilter]);
+    return counts;
+  }, [teams]);
 
   return (
     <div className="space-y-3">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2">
-        <input
-          type="text"
-          placeholder="Search teams..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 min-w-[150px] bg-surface border border-surface-border rounded-lg px-3 py-1.5 text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-accent"
-        />
-
-        <select
-          value={regionFilter}
-          onChange={(e) => setRegionFilter(e.target.value as Region | "All")}
-          className="bg-surface border border-surface-border rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent"
+      {/* Region Buttons */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setRegionFilter("All")}
+          className={`
+            px-4 py-2 rounded-lg text-sm font-semibold transition-all
+            ${regionFilter === "All"
+              ? "bg-accent text-white shadow-lg shadow-accent/20"
+              : "bg-surface-hover text-text-secondary hover:bg-surface-border"
+            }
+          `}
         >
-          <option value="All">All Regions</option>
-          {REGIONS.map((r) => (
-            <option key={r} value={r}>{r}</option>
-          ))}
-        </select>
-
-        <select
-          value={seedFilter}
-          onChange={(e) => setSeedFilter(e.target.value)}
-          className="bg-surface border border-surface-border rounded-lg px-3 py-1.5 text-sm text-text-primary focus:outline-none focus:border-accent"
-        >
-          <option value="All">All Seeds</option>
-          {Array.from({ length: 16 }, (_, i) => i + 1).map((seed) => (
-            <option key={seed} value={seed}>#{seed} Seed</option>
-          ))}
-        </select>
+          All <span className="font-financial text-xs ml-1">({regionCounts.All})</span>
+        </button>
+        {REGIONS.map((region) => (
+          <button
+            key={region}
+            onClick={() => setRegionFilter(region)}
+            className={`
+              px-4 py-2 rounded-lg text-sm font-semibold transition-all
+              ${regionFilter === region
+                ? `${REGION_BG_CLASSES[region]} ring-1 ring-current shadow-lg`
+                : "bg-surface-hover text-text-secondary hover:bg-surface-border"
+              }
+            `}
+          >
+            {region} <span className="font-financial text-xs ml-1">({regionCounts[region]})</span>
+          </button>
+        ))}
       </div>
-
-      {/* Team count */}
-      <p className="text-text-muted text-xs">
-        {availableTeams.length} teams available
-      </p>
 
       {/* Team Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-1">
@@ -82,7 +84,7 @@ export default function TeamPicker({ teams, onSelect, selectedTeamId }: TeamPick
 
       {availableTeams.length === 0 && (
         <p className="text-text-muted text-sm text-center py-8">
-          No teams match your filters
+          No teams available in this region
         </p>
       )}
     </div>

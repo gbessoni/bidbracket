@@ -36,6 +36,7 @@ export default function NominationPanel({
   const [error, setError] = useState<string | null>(null);
 
   const handleSelectTeam = (team: Team) => {
+    if (!isNominator) return;
     setSelectedTeam(team);
     setStartingBid("1");
     setShowModal(true);
@@ -61,30 +62,32 @@ export default function NominationPanel({
     }
   };
 
-  if (!isNominator) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 space-y-4">
-        <div className="w-16 h-16 rounded-full bg-surface-hover flex items-center justify-center">
-          <span className="text-2xl font-bold text-text-secondary">
-            {nominatorName.charAt(0).toUpperCase()}
-          </span>
-        </div>
-        <div className="text-center">
-          <p className="text-text-primary font-semibold">{nominatorName}&apos;s Turn</p>
-          <p className="text-text-muted text-sm">Waiting for them to nominate a team...</p>
-        </div>
-        <Spinner />
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      <div className="text-center">
-        <h3 className="text-lg font-bold text-accent">Your Turn to Nominate!</h3>
-        <p className="text-text-secondary text-sm">Select a team to put up for auction</p>
-      </div>
+    <div className="space-y-3">
+      {/* Status Banner */}
+      {isNominator ? (
+        <div className="bg-accent/10 border border-accent/30 rounded-lg px-4 py-3 text-center">
+          <h3 className="text-base font-bold text-accent">Your Turn to Nominate!</h3>
+          <p className="text-text-secondary text-xs mt-0.5">Tap a team to put it up for auction</p>
+        </div>
+      ) : (
+        <div className="bg-alert/10 border border-alert/30 rounded-lg px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-surface-hover flex items-center justify-center">
+              <span className="text-sm font-bold text-text-secondary">
+                {nominatorName.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-text-primary">{nominatorName}&apos;s Turn</p>
+              <p className="text-text-muted text-[10px]">Waiting for nomination...</p>
+            </div>
+          </div>
+          <Spinner size="sm" />
+        </div>
+      )}
 
+      {/* Always show team browser */}
       <TeamPicker
         teams={teams}
         onSelect={handleSelectTeam}
@@ -121,7 +124,7 @@ export default function NominationPanel({
                   key={amount}
                   onClick={() => setStartingBid(String(amount))}
                   className={`
-                    flex-1 py-1.5 rounded-lg text-sm font-financial transition-colors
+                    flex-1 py-2 rounded-lg text-sm font-financial transition-colors
                     ${startingBid === String(amount)
                       ? "bg-accent text-white"
                       : "bg-surface-hover text-text-secondary hover:bg-surface-border"

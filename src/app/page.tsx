@@ -10,17 +10,28 @@ import Button from "@/components/ui/Button";
 
 export default function Home() {
   const [mode, setMode] = useState<"landing" | "create" | "join" | "rejoin">("landing");
-  const { identity } = usePlayerIdentity();
+  const { identity, clearIdentity } = usePlayerIdentity();
   const router = useRouter();
   const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    if (identity && !redirecting) {
-      setRedirecting(true);
-      // Go straight to lobby — it will auto-redirect to draft/tournament based on league status
-      router.push(`/lobby/${identity.leagueId}`);
-    }
-  }, [identity, router, redirecting]);
+    if (!identity || redirecting) return;
+
+    // Verify the league still exists before redirecting
+    import("firebase/database").then(({ get, ref }) =>
+      import("@/lib/firebase/config").then(({ getDb }) =>
+        get(ref(getDb(), `leagues/${identity.leagueId}`)).then((snap) => {
+          if (snap.exists()) {
+            setRedirecting(true);
+            router.push(`/lobby/${identity.leagueId}`);
+          } else {
+            // League was deleted — clear stale identity
+            clearIdentity();
+          }
+        })
+      )
+    );
+  }, [identity, router, redirecting, clearIdentity]);
 
   if (redirecting) return null;
 

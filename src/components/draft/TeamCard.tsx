@@ -49,6 +49,11 @@ export default function TeamCard({ team, size = "md", onClick, selected, showOwn
           <span className="font-financial text-xs text-text-muted">
             #{team.seed}
           </span>
+          {team.record && (
+            <span className="font-financial text-xs text-text-muted">
+              ({team.record})
+            </span>
+          )}
           <Badge className={REGION_BG_CLASSES[team.region]}>
             {team.region}
           </Badge>

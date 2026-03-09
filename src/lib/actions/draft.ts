@@ -42,6 +42,7 @@ export async function startDraft(leagueId: string, playerId: string) {
       draftOrder: null,
       wins: 0,
       isFirstFour: team.isFirstFour,
+      record: team.record,
     };
   }
 

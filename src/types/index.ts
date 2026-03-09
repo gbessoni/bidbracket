@@ -46,6 +46,7 @@ export interface Team {
   draftOrder: number | null;
   wins: number;
   isFirstFour: boolean;
+  record: string | null;
 }
 
 export interface AuctionState {

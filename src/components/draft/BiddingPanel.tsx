@@ -104,8 +104,16 @@ export default function BiddingPanel({
         </p>
       </div>
 
+      {/* Out of budget */}
+      {playerBudget <= 0 && !isHighBidder && !timer.isExpired && (
+        <div className="bg-surface-hover rounded-lg px-4 py-3 text-center">
+          <p className="text-text-muted text-sm font-semibold">You&apos;re out of budget</p>
+          <p className="text-text-muted text-xs mt-0.5">Watching only</p>
+        </div>
+      )}
+
       {/* Bid Controls */}
-      {!isHighBidder && !timer.isExpired && (
+      {!isHighBidder && !timer.isExpired && playerBudget > 0 && (
         <div className="space-y-3">
           {/* Quick bid buttons */}
           <div className="grid grid-cols-4 gap-1.5">

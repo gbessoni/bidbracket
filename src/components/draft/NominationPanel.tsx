@@ -35,8 +35,10 @@ export default function NominationPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isBroke = playerBudget <= 0;
+
   const handleSelectTeam = (team: Team) => {
-    if (!isNominator) return;
+    if (!isNominator || isBroke) return;
     setSelectedTeam(team);
     setStartingBid("1");
     setShowModal(true);
@@ -65,7 +67,12 @@ export default function NominationPanel({
   return (
     <div className="space-y-3">
       {/* Status Banner */}
-      {isNominator ? (
+      {isBroke ? (
+        <div className="bg-surface-hover rounded-lg px-4 py-3 text-center">
+          <h3 className="text-base font-bold text-text-muted">Out of Budget</h3>
+          <p className="text-text-muted text-xs mt-0.5">You can no longer nominate or bid</p>
+        </div>
+      ) : isNominator ? (
         <div className="bg-accent/10 border border-accent/30 rounded-lg px-4 py-3 text-center">
           <h3 className="text-base font-bold text-accent">Your Turn to Nominate!</h3>
           <p className="text-text-secondary text-xs mt-0.5">Tap a team to put it up for auction</p>

@@ -144,12 +144,26 @@ export async function finalizePick(leagueId: string) {
   const newBudget = winner.budget - cost;
   const totalDrafted = (auction.totalTeamsDrafted || 0) + 1;
 
-  // Advance to next nominator
+  // Advance to next nominator, skipping players with $0 budget
   const turnOrder = auction.turnOrder || [];
-  const nextIndex = ((auction.nominatorIndex || 0) + 1) % turnOrder.length;
-  const nextNominatorId = turnOrder[nextIndex];
+  const playersSnap = await get(ref(db, `players/${leagueId}`));
+  const allPlayers = playersSnap.val() as Record<string, { budget: number }>;
+  // Apply winner's new budget for the skip check
+  allPlayers[winnerId].budget = newBudget;
 
-  const isComplete = totalDrafted >= NCAA_TEAMS.length;
+  let nextIndex = ((auction.nominatorIndex || 0) + 1) % turnOrder.length;
+  let nextNominatorId = turnOrder[nextIndex];
+  let checked = 0;
+  while (checked < turnOrder.length) {
+    if ((allPlayers[turnOrder[nextIndex]]?.budget ?? 0) > 0) break;
+    nextIndex = (nextIndex + 1) % turnOrder.length;
+    nextNominatorId = turnOrder[nextIndex];
+    checked++;
+  }
+
+  // If all players are broke, draft is over
+  const allBroke = checked >= turnOrder.length;
+  const isComplete = totalDrafted >= NCAA_TEAMS.length || allBroke;
 
   const updates: Record<string, unknown> = {};
 

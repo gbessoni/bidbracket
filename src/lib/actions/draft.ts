@@ -161,9 +161,13 @@ export async function finalizePick(leagueId: string) {
     checked++;
   }
 
-  // If all players are broke, draft is over
-  const allBroke = checked >= turnOrder.length;
-  const isComplete = totalDrafted >= NCAA_TEAMS.length || allBroke;
+  // Count how many players still have money
+  const playersWithMoney = turnOrder.filter(
+    (pid) => (allPlayers[pid]?.budget ?? 0) > 0
+  ).length;
+
+  // Draft ends if: all teams drafted, all broke, or only 1 player has money (no auction possible)
+  const isComplete = totalDrafted >= NCAA_TEAMS.length || playersWithMoney < 2;
 
   const updates: Record<string, unknown> = {};
 

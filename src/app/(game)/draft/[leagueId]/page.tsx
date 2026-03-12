@@ -11,6 +11,7 @@ import NominationPanel from "@/components/draft/NominationPanel";
 import BiddingPanel from "@/components/draft/BiddingPanel";
 import DraftStandings from "@/components/draft/DraftStandings";
 import AllPlayersRosters from "@/components/draft/AllPlayersRosters";
+import TeamsRemaining from "@/components/draft/TeamsRemaining";
 import Spinner from "@/components/ui/Spinner";
 
 type MobileTab = "auction" | "rosters" | "standings";
@@ -59,6 +60,11 @@ export default function DraftPage() {
     [teams, auction]
   );
 
+  const teamsLeft = useMemo(
+    () => teams.filter((t) => t.status === "AVAILABLE").length,
+    [teams]
+  );
+
   if (auctionLoading || !auction || !currentPlayer) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -91,6 +97,10 @@ export default function DraftPage() {
           currentTeam={currentTeam}
         />
       )}
+      {/* Teams remaining browser - shown during bidding when TeamPicker isn't visible */}
+      {auction.phase === "BIDDING" && (
+        <TeamsRemaining teams={teams} />
+      )}
     </>
   );
 
@@ -112,9 +122,12 @@ export default function DraftPage() {
             <span className="text-text-muted">
               Rd {auction.roundNumber}
             </span>
-            <span className="font-financial text-accent">
-              {auction.totalTeamsDrafted}/68
-            </span>
+            <div className="bg-surface-hover rounded px-1.5 py-0.5">
+              <span className="text-text-muted text-[10px]">Left </span>
+              <span className="font-financial text-accent font-bold">
+                {teamsLeft}
+              </span>
+            </div>
             <div className="w-px h-3 bg-surface-border" />
             <span className="font-financial text-accent font-bold text-sm">
               ${currentPlayer.budget}

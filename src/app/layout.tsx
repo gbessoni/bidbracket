@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { PlayerProvider } from "@/context/PlayerContext";
+import AnalyticsProvider from "@/components/AnalyticsProvider";
 
 export const metadata: Metadata = {
   title: "BidBracket - Auction Draft",
@@ -15,6 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen">
+        <AnalyticsProvider />
         <PlayerProvider>{children}</PlayerProvider>
       </body>
     </html>

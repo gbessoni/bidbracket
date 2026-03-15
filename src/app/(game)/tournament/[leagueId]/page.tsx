@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { usePlayerIdentity } from "@/context/PlayerContext";
 import { useLeague } from "@/hooks/useLeague";
 import { useTeams } from "@/hooks/useTeams";
@@ -13,6 +13,10 @@ import Card from "@/components/ui/Card";
 import Spinner from "@/components/ui/Spinner";
 import Button from "@/components/ui/Button";
 import { GameScore } from "@/types";
+import {
+  recordGameResults,
+  getTournamentSummary,
+} from "@/lib/actions/tournament";
 
 export default function TournamentPage() {
   const params = useParams();
@@ -26,6 +30,7 @@ export default function TournamentPage() {
   const [scores, setScores] = useState<GameScore[]>([]);
   const [scoresLoading, setScoresLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const processedGamesRef = useRef<Set<string>>(new Set());
 
   const fetchScores = useCallback(async () => {
     setScoresLoading(true);
@@ -44,12 +49,71 @@ export default function TournamentPage() {
     setScoresLoading(false);
   }, []);
 
+  // Auto-record final game results to Firebase
+  useEffect(() => {
+    if (!leagueId || scores.length === 0) return;
+
+    const finalGames = scores.filter((g) => g.status === "final");
+    const newFinalGames = finalGames.filter((g) => {
+      const key = `${g.team1}-${g.team2}-${g.score1}-${g.score2}`;
+      return !processedGamesRef.current.has(key);
+    });
+
+    if (newFinalGames.length === 0) return;
+
+    // Mark as processed before calling to prevent duplicate calls
+    newFinalGames.forEach((g) => {
+      const key = `${g.team1}-${g.team2}-${g.score1}-${g.score2}`;
+      processedGamesRef.current.add(key);
+    });
+
+    recordGameResults(leagueId, newFinalGames)
+      .then((result) => {
+        if (result.errors.length > 0) {
+          console.warn("Some game results failed to record:", result.errors);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to record game results:", err);
+      });
+  }, [leagueId, scores]);
+
   // Fetch scores on mount and every 5 minutes
   useEffect(() => {
     fetchScores();
     const interval = setInterval(fetchScores, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [fetchScores]);
+
+  // Group scores by round
+  const scoresByRound = scores.reduce<Record<string, GameScore[]>>(
+    (acc, game) => {
+      const round = game.round || "Unknown";
+      if (!acc[round]) acc[round] = [];
+      acc[round].push(game);
+      return acc;
+    },
+    {}
+  );
+
+  // Order rounds logically
+  const roundOrder = [
+    "First Four",
+    "Round of 64",
+    "Round of 32",
+    "Sweet 16",
+    "Elite 8",
+    "Final Four",
+    "Championship",
+  ];
+
+  const orderedRounds = Object.keys(scoresByRound).sort((a, b) => {
+    const aIdx = roundOrder.indexOf(a);
+    const bIdx = roundOrder.indexOf(b);
+    return (aIdx === -1 ? 99 : aIdx) - (bIdx === -1 ? 99 : bIdx);
+  });
+
+  const summary = getTournamentSummary(scores);
 
   if (leagueLoading) {
     return (
@@ -92,6 +156,37 @@ export default function TournamentPage() {
       </header>
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+        {/* Tournament Summary Card */}
+        {scores.length > 0 && (
+          <Card>
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <span className="font-semibold text-accent">
+                {summary.currentRound}
+              </span>
+              <span className="text-text-muted">&middot;</span>
+              <span className="text-text-secondary">
+                {summary.completedGames}/{summary.totalGames} games complete
+              </span>
+              {summary.liveGames > 0 && (
+                <>
+                  <span className="text-text-muted">&middot;</span>
+                  <span className="text-alert font-medium">
+                    {summary.liveGames} live now
+                  </span>
+                </>
+              )}
+              {summary.nextGame && (
+                <>
+                  <span className="text-text-muted">&middot;</span>
+                  <span className="text-text-secondary">
+                    Next: {summary.nextGame.team1} vs {summary.nextGame.team2}
+                  </span>
+                </>
+              )}
+            </div>
+          </Card>
+        )}
+
         {/* Standings */}
         <Standings
           players={players}
@@ -99,17 +194,39 @@ export default function TournamentPage() {
           currentPlayerId={identity?.playerId ?? ""}
         />
 
-        {/* Live Scores */}
+        {/* Live Scores grouped by round */}
         {scores.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wider">
-              Live Scores
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {scores.map((game, index) => (
-                <LiveScoreCard key={index} game={game} />
-              ))}
-            </div>
+          <div className="space-y-6">
+            {orderedRounds.map((round) => {
+              const roundGames = scoresByRound[round];
+              const liveCount = roundGames.filter(
+                (g) => g.status === "live"
+              ).length;
+
+              return (
+                <div key={round} className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-text-secondary uppercase tracking-wider">
+                      {round}
+                    </h3>
+                    {liveCount > 0 && (
+                      <span className="text-[10px] font-bold text-alert bg-alert/10 px-1.5 py-0.5 rounded">
+                        {liveCount} LIVE
+                      </span>
+                    )}
+                    <span className="text-[10px] text-text-muted">
+                      {roundGames.filter((g) => g.status === "final").length}/
+                      {roundGames.length} complete
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {roundGames.map((game, index) => (
+                      <LiveScoreCard key={`${round}-${index}`} game={game} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
